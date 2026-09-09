@@ -1,0 +1,36 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow" x="-40" y="-40" width="176" height="176" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00DCFF" flood-opacity="0.65"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#2CCBFF" flood-opacity="0.28"/>
+    </filter>
+    <linearGradient id="panelBlue" x1="9" y1="32" x2="37" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1B7CFF"/>
+      <stop offset="0.48" stop-color="#66D9FF"/>
+      <stop offset="1" stop-color="#1F78D8"/>
+    </linearGradient>
+    <linearGradient id="bodyGold" x1="39" y1="30" x2="58" y2="66" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE6A3"/>
+      <stop offset="0.42" stop-color="#F6B84A"/>
+      <stop offset="1" stop-color="#B86C1F"/>
+    </linearGradient>
+    <linearGradient id="bodyDark" x1="42" y1="35" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173653"/>
+      <stop offset="1" stop-color="#071827"/>
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#glow)">
+    <path d="M11 37C11 33.6863 13.6863 31 17 31H35C38.3137 31 41 33.6863 41 37V59C41 62.3137 38.3137 65 35 65H17C13.6863 65 11 62.3137 11 59V37Z" fill="url(#panelBlue)" stroke="#BDEFFF" stroke-width="2"/>
+    <path d="M55 37C55 33.6863 57.6863 31 61 31H79C82.3137 31 85 33.6863 85 37V59C85 62.3137 82.3137 65 79 65H61C57.6863 65 55 62.3137 55 59V37Z" fill="url(#panelBlue)" stroke="#BDEFFF" stroke-width="2"/>
+    <path d="M19 32V64M27 32V64M35 32V64M63 32V64M71 32V64M79 32V64" stroke="#0C3866" stroke-opacity="0.58" stroke-width="1.5"/>
+    <path d="M12 43H40M12 53H40M56 43H84M56 53H84" stroke="#D6F8FF" stroke-opacity="0.4" stroke-width="1.2"/>
+
+    <rect x="38" y="35" width="20" height="26" rx="4" fill="url(#bodyGold)" stroke="#FFF3C8" stroke-width="2"/>
+    <rect x="42" y="39" width="12" height="18" rx="3" fill="url(#bodyDark)" stroke="#9BD9FF" stroke-opacity="0.8" stroke-width="1.4"/>
+    <circle cx="48" cy="48" r="3" fill="#00E5FF"/>
+    <path d="M36 48H30M60 48H66" stroke="#EAFBFF" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M48 35V25M48 61V71" stroke="#BDEFFF" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="48" cy="23" r="3" fill="#00E5FF" stroke="#EAFBFF" stroke-width="1.5"/>
+  </g>
+</svg>

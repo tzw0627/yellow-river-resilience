@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local secrets (Cesium ion token)
+frontend/config.js
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+*.tsbuildinfo
+
+# Large intermediate artifacts (uncomment if 仓库以后变大):
+# data/processed/aligned/*.tif
+# data/processed/indices/*.tif
+# frontend/data/overlays/*.png
