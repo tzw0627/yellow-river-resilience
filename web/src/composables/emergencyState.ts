@@ -63,12 +63,42 @@ export interface EmergencyDataset {
   days: EmergencyDay[];
 }
 
+export interface EmergencyCatalogYear {
+  year: number;
+  file: string;
+  dayCount: number;
+  stationCount: number;
+  eventCount: number;
+  peak: number;
+  peakDate: string | null;
+}
+
+export interface EmergencyCatalog {
+  metadata: {
+    title: string;
+    source: string;
+    startYear: number;
+    endYear: number;
+    temporalResolution: string;
+    stationCount: number;
+  };
+  years: EmergencyCatalogYear[];
+}
+
+const FRI_YEARS = [2000, 2005, 2010, 2015, 2020];
+const datasetCache = new Map<number, EmergencyDataset>();
+const friCache = new Map<number, QueryGrid>();
+let activeRequest = 0;
+
+export const emergencyCatalog = shallowRef<EmergencyCatalog | null>(null);
 export const emergencyDataset = shallowRef<EmergencyDataset | null>(null);
 export const emergencyFriGrid = shallowRef<QueryGrid | null>(null);
 export const emergencyLoading = ref(false);
 export const emergencyError = ref("");
 export const emergencyActive = ref(false);
+export const selectedEmergencyYear = ref(2020);
 export const selectedEmergencyDate = ref("");
+export const emergencyRiskYear = ref(2020);
 export const rainfallMode = ref<RainfallMode>("daily");
 
 export const selectedEmergencyDay = computed(() =>
@@ -113,27 +143,67 @@ function sampleGrid(grid: QueryGrid | null, lon: number, lat: number) {
   return grid.values[y]?.[x] ?? null;
 }
 
-export async function loadEmergencyDataset() {
-  if (emergencyDataset.value) return emergencyDataset.value;
+export function riskYearForObservation(year: number) {
+  return [...FRI_YEARS].reverse().find((candidate) => candidate <= year) ?? FRI_YEARS[0];
+}
+
+async function loadCatalog() {
+  if (emergencyCatalog.value) return emergencyCatalog.value;
+  const response = await fetch("/data/emergency/index.json");
+  if (!response.ok) throw new Error("降水年份目录加载失败");
+  emergencyCatalog.value = await response.json() as EmergencyCatalog;
+  return emergencyCatalog.value;
+}
+
+export async function loadEmergencyYear(year: number) {
+  const requestId = ++activeRequest;
   emergencyLoading.value = true;
   emergencyError.value = "";
   try {
-    const [response, friResponse] = await Promise.all([
-      fetch("/data/emergency/precipitation_2020.json"),
-      fetch("/data/query_grids/four_dim/four_dim_fri_2020.json"),
-    ]);
-    if (!response.ok) throw new Error("实测降水数据加载失败");
-    if (!friResponse.ok) throw new Error("洪水风险指数数据加载失败");
-    emergencyFriGrid.value = await friResponse.json() as QueryGrid;
-    emergencyDataset.value = await response.json() as EmergencyDataset;
-    selectedEmergencyDate.value = emergencyDataset.value.events[0]?.date ?? emergencyDataset.value.days[0]?.date ?? "";
-    return emergencyDataset.value;
+    const catalog = await loadCatalog();
+    const entry = catalog.years.find((item) => item.year === year);
+    if (!entry) throw new Error(`暂无 ${year} 年实测降水数据`);
+    const riskYear = riskYearForObservation(year);
+    const datasetPromise = datasetCache.has(year)
+      ? Promise.resolve(datasetCache.get(year)!)
+      : fetch(`/data/emergency/${entry.file}`).then(async (response) => {
+          if (!response.ok) throw new Error(`${year} 年实测降水数据加载失败`);
+          const dataset = await response.json() as EmergencyDataset;
+          datasetCache.set(year, dataset);
+          return dataset;
+        });
+    const friPromise = friCache.has(riskYear)
+      ? Promise.resolve(friCache.get(riskYear)!)
+      : fetch(`/data/query_grids/four_dim/four_dim_fri_${riskYear}.json`).then(async (response) => {
+          if (!response.ok) throw new Error(`${riskYear} 年洪水风险指数加载失败`);
+          const grid = await response.json() as QueryGrid;
+          friCache.set(riskYear, grid);
+          return grid;
+        });
+    const [dataset, friGrid] = await Promise.all([datasetPromise, friPromise]);
+    if (requestId !== activeRequest) return dataset;
+    selectedEmergencyYear.value = year;
+    emergencyRiskYear.value = riskYear;
+    emergencyDataset.value = dataset;
+    emergencyFriGrid.value = friGrid;
+    selectedEmergencyDate.value = dataset.events[0]?.date ?? dataset.days[0]?.date ?? "";
+    return dataset;
   } catch (error) {
-    emergencyError.value = error instanceof Error ? error.message : String(error);
+    if (requestId === activeRequest) {
+      emergencyError.value = error instanceof Error ? error.message : String(error);
+    }
     throw error;
   } finally {
-    emergencyLoading.value = false;
+    if (requestId === activeRequest) emergencyLoading.value = false;
   }
+}
+
+export async function loadEmergencyDataset() {
+  const catalog = await loadCatalog();
+  const preferredYear = catalog.years.some((item) => item.year === selectedEmergencyYear.value)
+    ? selectedEmergencyYear.value
+    : catalog.metadata.endYear;
+  return loadEmergencyYear(preferredYear);
 }
 
 export function selectEmergencyEvent(date: string) {

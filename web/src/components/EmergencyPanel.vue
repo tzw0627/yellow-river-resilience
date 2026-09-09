@@ -4,15 +4,19 @@ import { useResilienceStore } from "../stores/resilience";
 import { showThematicLayerMode } from "../composables/layerDisplayMode";
 import {
   emergencyActive,
+  emergencyCatalog,
   emergencyDataset,
   emergencyError,
   emergencyLoading,
   emergencyMapStations,
+  emergencyRiskYear,
   loadEmergencyDataset,
+  loadEmergencyYear,
   rainfallMode,
   selectEmergencyEvent,
   selectedEmergencyDate,
   selectedEmergencyDay,
+  selectedEmergencyYear,
   type EmergencyObservation,
 } from "../composables/emergencyState";
 
@@ -68,9 +72,21 @@ function setMode(mode: "daily" | "rolling3") {
 }
 
 function openRiskLayer(layer: string) {
-  store.setYear(2020);
+  store.setYear(emergencyRiskYear.value);
   store.setLayer(layer);
   showThematicLayerMode();
+}
+
+async function onYearChange(event: Event) {
+  stopPlayback();
+  const year = Number((event.target as HTMLSelectElement).value);
+  try {
+    await loadEmergencyYear(year);
+    setPlaybackWindow();
+    store.setYear(emergencyRiskYear.value);
+  } catch {
+    stopPlayback();
+  }
 }
 
 function onEventChange(event: Event) {
@@ -124,14 +140,22 @@ function onTimelineInput(event: Event) {
   setDayByIndex(Number((event.target as HTMLInputElement).value));
 }
 
+function onDateInput(event: Event) {
+  stopPlayback();
+  const date = (event.target as HTMLInputElement).value;
+  if (emergencyDataset.value?.days.some((item) => item.date === date)) {
+    selectEmergencyEvent(date);
+  }
+}
+
 onMounted(async () => {
   emergencyActive.value = true;
-  store.setYear(2020);
   store.setLayer("four_dim_fri");
   showThematicLayerMode();
   try {
     await loadEmergencyDataset();
     setPlaybackWindow();
+    store.setYear(emergencyRiskYear.value);
   } catch {
     stopPlayback();
   }
@@ -159,15 +183,27 @@ onBeforeUnmount(() => {
 
     <template v-else-if="emergencyDataset && selectedEmergencyDay">
       <section class="emergency-event-card">
-        <label for="emergency-event-select">典型强降水过程快速定位</label>
-        <select id="emergency-event-select" :value="currentEvent?.date ?? ''" @change="onEventChange">
-          <option value="" disabled>请选择典型过程</option>
-          <option v-for="event in emergencyDataset.events" :key="event.id" :value="event.date">
-            {{ event.label }}
-          </option>
-        </select>
+        <div class="emergency-select-grid">
+          <div>
+            <label for="emergency-year-select">降水年份</label>
+            <select id="emergency-year-select" :value="selectedEmergencyYear" @change="onYearChange">
+              <option v-for="item in [...(emergencyCatalog?.years ?? [])].reverse()" :key="item.year" :value="item.year">
+                {{ item.year }} 年
+              </option>
+            </select>
+          </div>
+          <div>
+            <label for="emergency-event-select">本年典型强降水过程</label>
+            <select id="emergency-event-select" :value="currentEvent?.date ?? ''" @change="onEventChange">
+              <option value="" disabled>请选择典型过程</option>
+              <option v-for="event in emergencyDataset.events" :key="event.id" :value="event.date">
+                {{ event.label }}
+              </option>
+            </select>
+          </div>
+        </div>
         <div class="emergency-source-row">
-          <span>{{ emergencyDataset.metadata.source }}</span>
+          <span>覆盖 2000—2020 年逐日实测</span>
           <strong>{{ emergencyDataset.metadata.stationCount }} 个沿线站点</strong>
         </div>
       </section>
@@ -175,7 +211,14 @@ onBeforeUnmount(() => {
       <section class="rainfall-timeline">
         <div class="timeline-now">
           <span><i /> 日期由用户选择</span>
-          <strong>{{ selectedEmergencyDate }}</strong>
+          <input
+            class="timeline-date-input"
+            type="date"
+            :min="emergencyDataset.days[0]?.date"
+            :max="emergencyDataset.days[emergencyDataset.days.length - 1]?.date"
+            :value="selectedEmergencyDate"
+            @change="onDateInput"
+          />
         </div>
         <input
           type="range"
@@ -225,11 +268,11 @@ onBeforeUnmount(() => {
           <strong>{{ responseAssessment.label }}</strong>
         </div>
         <p>{{ responseAssessment.detail }}</p>
-        <small>依据当前日期实测降水与 2020 FRI 联合计算，不等同于政府发布的预警等级。</small>
+        <small>依据当前日期实测降水与 {{ emergencyRiskYear }} 年 FRI 风险快照联合计算，不等同于政府发布的预警等级。</small>
       </section>
 
       <section class="emergency-fusion">
-        <div class="emergency-section-title"><span>降水 × FRI 联合风险</span><b>{{ highFusionCount }} 个高风险站点</b></div>
+        <div class="emergency-section-title"><span>降水 × FRI 联合风险</span><b>{{ emergencyRiskYear }} 风险底图 · {{ highFusionCount }} 个高风险站点</b></div>
         <p class="fusion-formula">降水危险度 ×（0.55 + 0.45 × FRI归一值）</p>
         <div class="fusion-hotspots">
           <article v-for="(item, index) in fusionStations.slice(0, 4)" :key="item.id" :class="`risk-${item.riskLevel}`">

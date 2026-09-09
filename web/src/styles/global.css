@@ -4671,6 +4671,12 @@ body {
   letter-spacing: 0.08em;
 }
 
+.emergency-select-grid {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 7px;
+}
+
 .emergency-event-card select {
   width: 100%;
   padding: 9px 10px;
@@ -5093,6 +5099,19 @@ body {
   font-family: "DIN Alternate", sans-serif;
   font-size: 17px;
   letter-spacing: 0.04em;
+}
+
+.timeline-date-input {
+  width: 132px;
+  padding: 5px 7px;
+  border: 1px solid rgba(59, 172, 232, 0.42);
+  border-radius: 2px;
+  color: #e8f8ff;
+  background: rgba(10, 49, 69, 0.9);
+  font-family: "DIN Alternate", sans-serif;
+  font-size: 13px;
+  color-scheme: dark;
+  outline: none;
 }
 
 .rainfall-timeline input[type="range"] {
